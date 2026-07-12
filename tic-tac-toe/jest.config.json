@@ -1,0 +1,9 @@
+# used: documentation-and-adrs kind: skill
+# used: GitHub___create_or_update_file kind: tool
+# jest config
+{
+  "preset": "ts-jest",
+  "testEnvironment": "jsdom",
+  "collectCoverage": true,
+  "coverageDirectory": "coverage"
+}
