@@ -1,0 +1,29 @@
+# used: frontend-ui-engineering kind: skill
+# used: documentation-and-adrs kind: skill
+# used: GitHub___create_or_update_file kind: tool
+{
+  "name": "agentr-tictactoe",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "jest --coverage"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.2",
+    "@types/react": "^18.2.21",
+    "@types/react-dom": "^18.2.7",
+    "jest": "^29.6.1",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.0",
+    "@testing-library/react": "^14.0.0",
+    "@testing-library/jest-dom": "^6.0.0"
+  }
+}
