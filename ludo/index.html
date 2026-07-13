@@ -1,0 +1,176 @@
+<!--
+# used: mcp_GitHub.create_or_update_file kind: tool
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ludo — Single Page</title>
+  <style>
+    /* simple board and pieces */
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;background:#f7f7f7;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+    .board{width:560px;height:560px;background:#fff;border:6px solid #333;display:grid;grid-template-columns:repeat(15,1fr);grid-template-rows:repeat(15,1fr);position:relative}
+    .cell{box-sizing:border-box;width:100%;height:100%;border:1px solid rgba(0,0,0,0.03)}
+    .controls{position:absolute;right:8px;top:8px;background:rgba(255,255,255,0.95);padding:8px;border-radius:6px;border:1px solid #ddd}
+    button{padding:8px 12px;font-size:14px}
+    .dice{font-weight:700;margin-left:8px}
+    .msg{margin-top:8px}
+    .token{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;box-shadow:0 2px 4px rgba(0,0,0,0.2)}
+    .red{background:#e74c3c}
+    .green{background:#27ae60}
+    .yellow{background:#f1c40f;color:#111}
+    .blue{background:#2980b9}
+    .home{display:flex;align-items:center;justify-content:center}
+  </style>
+</head>
+<body>
+  <div class="board" id="board"></div>
+  <div class="controls">
+    <div>
+      <button id="rollBtn">Roll Dice</button>
+      <span class="dice" id="dice">-</span>
+    </div>
+    <div class="msg" id="msg">Click Roll to start.</div>
+    <div style="margin-top:8px"><button id="resetBtn">Reset</button></div>
+  </div>
+
+  <script>
+    /*
+    # used: mcp_GitHub.create_or_update_file kind: tool
+    Simple single-user Ludo: human plays Red, three AIs play Green, Yellow, Blue.
+    Simplified movement: 4 tokens per color, basic capture, no safe squares, first to move all tokens to home wins.
+    */
+
+    // Board model: We'll construct a 52-step track per standard Ludo and home columns of 6 steps.
+    const owner = 'learningsam20';
+    const repo = 'agentrworkrepo';
+
+    const COLORS = ['red','green','yellow','blue'];
+    const humanColor = 'red';
+
+    // Game state
+    let state = null;
+
+    function initState(){
+      state = {
+        turnIndex:0, // 0..3 corresponding to COLORS
+        dice: null,
+        // tokens: {color: [{pos: -1 means home yard, 0..51 track index, 52..57 home path}] }
+        tokens: {}
+      };
+      COLORS.forEach(c=>state.tokens[c]=[ -1,-1,-1,-1 ]);
+    }
+
+    function render(){
+      const board = document.getElementById('board');
+      board.innerHTML = '';
+      // create 15x15 grid cells
+      for(let r=0;r<15;r++)for(let c=0;c<15;c++){
+        const div = document.createElement('div');
+        div.className='cell';
+        // mark corners as homes
+        if((r<6&&c<6) || (r<6&&c>8) || (r>8&&c<6) || (r>8&&c>8)) div.classList.add('home');
+        board.appendChild(div);
+      }
+      // place tokens visually in simple stack near center based on color and pos index (not precise board mapping)
+      // For simplicity, we won't map exact board cells; tokens will be listed overlayed in controls area next to dice.
+      const msg = document.getElementById('msg');
+      msg.textContent = `Turn: ${COLORS[state.turnIndex].toUpperCase()} ${state.dice?('- Dice:'+state.dice):''}`;
+
+      // Show token list
+      const info = document.createElement('div');
+      info.style.position='absolute';info.style.left='8px';info.style.top='8px';info.style.background='rgba(255,255,255,0.9)';info.style.padding='8px';info.style.borderRadius='6px';info.style.border='1px solid #ddd';
+      COLORS.forEach(col=>{
+        const row = document.createElement('div');
+        row.style.display='flex';row.style.alignItems='center';row.style.gap='6px';row.style.marginBottom='6px';
+        const label = document.createElement('div');label.textContent=col.toUpperCase();label.style.width='60px';
+        row.appendChild(label);
+        state.tokens[col].forEach((p,i)=>{
+          const t = document.createElement('div');
+          t.className='token '+col;
+          t.textContent=i+1;
+          t.title=`pos:${p}`;
+          t.style.cursor='pointer';
+          t.onclick = ()=>onTokenClick(col,i);
+          row.appendChild(t);
+        });
+        info.appendChild(row);
+      });
+      board.appendChild(info);
+    }
+
+    function onTokenClick(col,idx){
+      // only allow clicks when human turn and human color
+      if(COLORS[state.turnIndex]!==humanColor){ alert('Not your turn'); return; }
+      if(col!==humanColor){ alert('You can only control Red.'); return; }
+      if(state.dice==null){ alert('Roll dice first'); return; }
+      // try move
+      const moved = tryMove(col,idx,state.dice);
+      if(moved){
+        state.dice=null;
+        advanceTurn();
+        render();
+        setTimeout(nextAITurnIfNeeded,500);
+      } else alert('Invalid move');
+    }
+
+    function tryMove(col,idx,steps){
+      const pos = state.tokens[col][idx];
+      if(pos===-1){
+        if(steps===6){ state.tokens[col][idx]=startIndexFor(col); return true; }
+        return false;
+      }
+      const newPos = (pos+steps)%52;
+      // capture if someone at newPos
+      for(const oc of COLORS){
+        if(oc===col) continue;
+        state.tokens[oc].forEach((p,pi)=>{ if(p===newPos) state.tokens[oc][pi]=-1; });
+      }
+      state.tokens[col][idx]=newPos;
+      return true;
+    }
+
+    function startIndexFor(col){ return {red:0,green:13,yellow:26,blue:39}[col]; }
+
+    function rollDice(){
+      const d = Math.floor(Math.random()*6)+1;
+      state.dice=d;
+      document.getElementById('dice').textContent=d;
+      render();
+      // if AI turn auto play
+      if(COLORS[state.turnIndex]!==humanColor) setTimeout(()=>aiPlayTurn(),400);
+    }
+
+    function aiPlayTurn(){
+      const col = COLORS[state.turnIndex];
+      // simple: if dice null, roll
+      if(state.dice==null){ rollDice(); return; }
+      // find first movable token
+      const choices = [];
+      state.tokens[col].forEach((p,i)=>{ if(canMove(col,i,state.dice)) choices.push(i); });
+      if(choices.length>0){
+        const pick = choices[Math.floor(Math.random()*choices.length)];
+        tryMove(col,pick,state.dice);
+      }
+      state.dice=null;
+      advanceTurn();
+      render();
+      // if next is AI, continue
+      setTimeout(nextAITurnIfNeeded,300);
+    }
+
+    function nextAITurnIfNeeded(){ if(COLORS[state.turnIndex]!==humanColor){ rollDice(); } }
+
+    function canMove(col,idx,steps){ const pos=state.tokens[col][idx]; if(pos===-1) return steps===6; return true; }
+
+    function advanceTurn(){ state.turnIndex=(state.turnIndex+1)%4; }
+
+    document.getElementById('rollBtn').addEventListener('click',()=>{ if(COLORS[state.turnIndex]!==humanColor){ alert('Wait for your turn'); return; } rollDice(); });
+    document.getElementById('resetBtn').addEventListener('click',()=>{ initState(); render(); document.getElementById('dice').textContent='-'; });
+
+    // init
+    initState(); render();
+  </script>
+</body>
+</html>
