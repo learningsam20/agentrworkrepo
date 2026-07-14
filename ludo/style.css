@@ -1,0 +1,6 @@
+body{font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column;align-items:center}
+#game{display:flex;gap:20px}
+#controls{display:flex;flex-direction:column;align-items:center}
+#dice{font-size:32px;margin:10px}
+canvas{border:1px solid #333;background:#fff}
+#log{max-width:200px;white-space:pre-wrap}
